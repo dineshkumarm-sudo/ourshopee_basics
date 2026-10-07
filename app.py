@@ -21,7 +21,7 @@ LOGO_SVG = """
 </svg>
 """
 
-# --- Comprehensive Styling (Fixes Dark Mode + Light Theme Layout) ---
+# --- Comprehensive Styling (Fixes Dark Mode + Button Contrast) ---
 st.markdown("""
 <style>
     /* Force canvas to soft gray/white */
@@ -78,19 +78,30 @@ st.markdown("""
         color: #1D1D1F !important;
     }
 
-    /* Buttons */
-    .stButton>button, .stDownloadButton>button {
+    /* Universal Button Contrast Overrides */
+    .stButton>button, 
+    .stDownloadButton>button,
+    button[kind="secondary"],
+    button[kind="primary"] {
         background-color: #0A2540 !important;
         color: #FFFFFF !important;
         border-radius: 10px !important;
-        border: none !important;
+        border: 1px solid #0A2540 !important;
         font-weight: 600 !important;
-        padding: 0.55rem 1.4rem !important;
+        padding: 0.6rem 1.4rem !important;
         box-shadow: 0 4px 12px rgba(10, 37, 64, 0.2) !important;
         transition: all 0.2s ease !important;
     }
-    .stButton>button:hover, .stDownloadButton>button:hover {
+
+    .stButton>button *, 
+    .stDownloadButton>button * {
+        color: #FFFFFF !important;
+    }
+
+    .stButton>button:hover, 
+    .stDownloadButton>button:hover {
         background-color: #FF6B00 !important;
+        border-color: #FF6B00 !important;
         color: #FFFFFF !important;
         box-shadow: 0 6px 16px rgba(255, 107, 0, 0.3) !important;
     }
@@ -271,186 +282,4 @@ class DataValidator:
             col = f"seo_description_{country}"
             val = str(row[col]) if col in row and not pd.isna(row[col]) else ""
             if val:
-                if not val.startswith("Buy "):
-                    self.log_error(idx, sku, col, 'SEO Descriptions', "Must start with 'Buy '.")
-                expected_suffix = f". Explore great deals at the best price. Get fast delivery across {country} | Ourshopee."
-                if not val.endswith(expected_suffix):
-                    self.log_error(idx, sku, col, 'SEO Descriptions', f"Must end with '{expected_suffix}'.")
-
-    def validate_seo_keywords(self, idx, sku, row):
-        for country in self.countries:
-            col = f"seo_keywords_{country}"
-            val = str(row[col]) if col in row and not pd.isna(row[col]) else ""
-            if val:
-                if re.search(r'\s,', val):
-                    self.log_error(idx, sku, col, 'SEO Keywords', "Comma should not have a space before it.")
-                if val.strip().endswith(','):
-                    self.log_error(idx, sku, col, 'SEO Keywords', "Must not end with a trailing comma.")
-
-    def validate_pricing(self, idx, sku, row):
-        cost_cols = [c for c in self.df.columns if c.startswith('cost_')]
-        for c_col in cost_cols:
-            suffix = c_col.replace('cost_', '')
-            p_col, sp_col = f"price_{suffix}", f"sp_price_{suffix}"
-            try:
-                cost = float(row[c_col]) if c_col in row and not pd.isna(row[c_col]) else None
-                price = float(row[p_col]) if p_col in row and not pd.isna(row[p_col]) else None
-                sp_price = float(row[sp_col]) if sp_col in row and not pd.isna(row[sp_col]) else None
-
-                if cost is not None:
-                    if price is not None and cost >= price:
-                        self.log_error(idx, sku, c_col, 'Pricing', f"Cost ({cost}) must be lower than price ({price}).")
-                    if sp_price is not None and cost >= sp_price:
-                        self.log_error(idx, sku, c_col, 'Pricing', f"Cost ({cost}) must be lower than sp_price ({sp_price}).")
-            except ValueError:
-                self.log_error(idx, sku, c_col, 'Pricing', "Non-numeric values in pricing columns.")
-
-
-# --- Helper Function for Clean Test Data ---
-def generate_sample_data():
-    return pd.DataFrame({
-        'product_model_no': ['SKU-1001', 'SKU-1002', 'SKU-1003', 'SKU-1004'],
-        'Brand_Name': ['Sony', 'Sony', 'Samsung', 'Apple'],
-        'brand_id': ['B-10', 'B-10', 'B-20', 'B-30'],
-        'product_title': [
-            'Sony Wireless Noise Canceling Headphones Extra Bass Premium Sound - SKU-1001',
-            'Incorrect Title Format Sample Without SKU End',
-            'Samsung OLED Smart TV High Dynamic Range Resolution - SKU-1003',
-            'Apple iPhone 15 Pro Max Natural Titanium 256GB Storage Edition - SKU-1004'
-        ],
-        'product_status': [1, 2, 1, 1],
-        'barcode_value': ['880123456789', '880123456789', '880987654321', '880555444333'],
-        'ship_charge_AED': [10, 15, 10, 10],
-        'product_long_description': ['Detailed description here', '', 'Smart TV description', 'iPhone description'],
-        'product_highlight_1': [
-            'Feature one with proper length valid description text length check here to reach minimum characters count without fullstop',
-            'Feature two ending with full stop.',
-            'Feature three with good characters count and no invalid punctuation or full stop at the end of the text line here now',
-            'Feature four text line with proper length and format for testing sample validation rules successfully without issues'
-        ],
-        'product_attribute_1': ['Color:Black', 'Warranty: 2 Years', 'Screen:65 Inch', 'Storage:256GB'],
-        'cost_UAE': [100, 200, 300, 400],
-        'price_UAE': [150, 180, 400, 500],
-        'sp_price_UAE': [120, 190, 350, 450],
-        'seo_title_UAE': [
-            'Sony Headphones Online at Best Prices in UAE | Ourshopee',
-            'Invalid Title Suffix UAE',
-            'Samsung TV Online at Best Prices in UAE | Ourshopee',
-            'Apple iPhone Online at Best Prices in UAE | Ourshopee'
-        ],
-        'seo_description_UAE': [
-            'Buy Sony Headphones. Explore great deals at the best price. Get fast delivery across UAE | Ourshopee.',
-            'Wrong Start Description',
-            'Buy Samsung TV. Explore great deals at the best price. Get fast delivery across UAE | Ourshopee.',
-            'Buy Apple iPhone. Explore great deals at the best price. Get fast delivery across UAE | Ourshopee.'
-        ],
-        'seo_keywords_UAE': ['headphones,audio,sony', 'tv ,samsung', 'iphone,apple,mobile', 'tech,gadgets,uae']
-    })
-
-
-# --- Header Layout ---
-st.markdown(f"""
-<div class="header-card">
-    <div>
-        <h1 class="gradient-title">Our Shopee Basic Data Checks</h1>
-        <div class="header-sub">Validation suite for titles, SKUs, brand mappings, SEO rules, highlights, and pricing.</div>
-    </div>
-    <div>{LOGO_SVG}</div>
-</div>
-""", unsafe_allow_html=True)
-
-
-# --- Upload & Test Controls ---
-ctrl_col1, ctrl_col2 = st.columns([3, 1])
-
-with ctrl_col1:
-    uploaded_file = st.file_uploader("Upload Excel or CSV File", type=["csv", "xlsx", "xls"])
-
-with ctrl_col2:
-    st.markdown("<br>", unsafe_allow_html=True)
-    load_sample = st.button("🧪 Load Sample Test Data", use_container_width=True)
-
-
-# --- Process File Data ---
-df_to_process = None
-
-if load_sample:
-    df_to_process = generate_sample_data()
-    st.info("Loaded sample dataset with test validation cases.")
-elif uploaded_file is not None:
-    try:
-        df_to_process = pd.read_csv(uploaded_file) if uploaded_file.name.endswith('.csv') else pd.read_excel(uploaded_file)
-    except Exception as e:
-        st.error(f"Failed to read file: {str(e)}")
-
-# --- Display Results and Analytics Dashboard ---
-if df_to_process is not None:
-    validator = DataValidator(df_to_process)
-    error_df = validator.run_all_validations()
-
-    total_rows = len(df_to_process)
-    error_rows = error_df['Row'].nunique() if not error_df.empty else 0
-    total_errors = len(error_df)
-    clean_rows = total_rows - error_rows
-    compliance_rate = (clean_rows / total_rows * 100) if total_rows > 0 else 100
-
-    # Key Metrics Cards
-    m1, m2, m3, m4 = st.columns(4)
-    m1.metric("Total Rows Evaluated", f"{total_rows:,}")
-    m2.metric("Flagged Rows", f"{error_rows:,}")
-    m3.metric("Total Issues", f"{total_errors:,}")
-    m4.metric("Compliance Rate", f"{compliance_rate:.1f}%")
-
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    if not error_df.empty:
-        tab_logs, tab_dash = st.tabs(["📋 Detailed Issue Logs", "📊 SKU Issue Dashboard"])
-
-        with tab_logs:
-            st.subheader("Validation Issue Logs")
-
-            categories = ["All"] + list(error_df['Category'].unique())
-            selected_cat = st.selectbox("Filter issues by category:", categories)
-
-            filtered_df = error_df if selected_cat == "All" else error_df[error_df['Category'] == selected_cat]
-            st.dataframe(filtered_df, use_container_width=True, height=360)
-
-            # Export Excel Report
-            output = io.BytesIO()
-            with pd.ExcelWriter(output, engine='openpyxl') as writer:
-                df_to_process.to_excel(writer, index=False, sheet_name='Original Data')
-                error_df.to_excel(writer, index=False, sheet_name='Validation Errors')
-
-            st.download_button(
-                label="📥 Download Excel Error Report (.xlsx)",
-                data=output.getvalue(),
-                file_name="ourshopee_validation_report.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
-
-        with tab_dash:
-            st.subheader("Analytics & SKU Issue Breakdown")
-
-            dash_col1, dash_col2 = st.columns(2)
-
-            with dash_col1:
-                st.markdown("**Issues by Category**")
-                cat_counts = error_df['Category'].value_counts().reset_index()
-                cat_counts.columns = ['Category', 'Error Count']
-                st.bar_chart(cat_counts.set_index('Category'))
-
-            with dash_col2:
-                st.markdown("**Top Flagged Columns**")
-                col_counts = error_df['Column'].value_counts().head(8).reset_index()
-                col_counts.columns = ['Column Name', 'Error Count']
-                st.bar_chart(col_counts.set_index('Column Name'))
-
-            st.markdown("---")
-            st.markdown("**SKUs with Highest Issue Count**")
-            sku_summary = error_df[error_df['SKU'] != 'N/A']['SKU'].value_counts().reset_index()
-            sku_summary.columns = ['SKU ID', 'Total Errors Found']
-            st.dataframe(sku_summary, use_container_width=True, height=220)
-
-    else:
-        st.balloons()
-        st.success("All validations passed! The dataset contains no errors.")
+                if
