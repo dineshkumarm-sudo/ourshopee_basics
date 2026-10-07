@@ -3,290 +3,380 @@ import re
 import pandas as pd
 import streamlit as st
 
-# --- Page Configuration ---
+# Set page configuration
 st.set_page_config(
     page_title="Our Shopee Basic Data Checks",
-    page_icon="🛒",
+    page_icon="🛍️",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
+# Apple-inspired Frosted Glass / Light Theme CSS
 st.markdown("""
 <style>
-    /* Global Apple-inspired Light Background */
-    .stApp {
+    /* Force Light Background everywhere */
+    .stApp, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
         background-color: #F5F5F7 !important;
-        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        color: #1D1D1F !important;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+    }
+    
+    /* Header Card */
+    .header-card {
+        background: rgba(255, 255, 255, 0.75);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.8);
+        border-radius: 18px;
+        padding: 24px 32px;
+        margin-bottom: 28px;
+        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.06);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .gradient-title {
+        font-size: 2.2rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, #0A2540 0%, #D4AF37 50%, #FF6B00 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        letter-spacing: -0.5px;
+        margin: 0;
+    }
+    
+    .header-sub {
+        color: #86868B;
+        font-size: 0.95rem;
+        margin-top: 4px;
+        font-weight: 400;
+    }
+    
+    .logo-img {
+        width: 80px;
+        height: 80px;
+        border-radius: 16px;
+        box-shadow: 0 4px 14px rgba(0,0,0,0.1);
+        object-fit: cover;
+    }
+
+    /* Clean Uploader Box */
+    [data-testid="stFileUploader"] {
+        background: rgba(255, 255, 255, 0.8) !important;
+        border: 2px dashed #0A2540 !important;
+        border-radius: 16px !important;
+        padding: 20px !important;
+    }
+    
+    [data-testid="stFileUploader"] section {
+        background: transparent !important;
+    }
+    
+    [data-testid="stFileUploader"] label, [data-testid="stFileUploader"] span {
         color: #1D1D1F !important;
     }
 
-    /* Top Main Title Banner */
-    .header-banner {
-        background: rgba(255, 255, 255, 0.85);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        padding: 1.8rem 2.2rem;
-        border-radius: 20px;
-        border: 1px solid rgba(229, 229, 234, 0.8);
-        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
-        margin-bottom: 2rem;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-    }
-
-    .header-title-text {
-        background: linear-gradient(135deg, #0A2540 0%, #0071E3 45%, #D4AF37 75%, #FF6B00 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        font-size: 2.2rem;
-        font-weight: 800;
-        letter-spacing: -0.8px;
-        margin: 0;
-    }
-
-    .header-sub-text {
-        color: #86868B;
-        font-size: 0.9rem;
-        font-weight: 500;
-        margin-top: 0.2rem;
-    }
-
-    /* Frosted Card Container */
-    .glass-card {
-        background: rgba(255, 255, 255, 0.75) !important;
-        backdrop-filter: blur(15px);
-        border-radius: 18px !important;
-        border: 1px solid rgba(255, 255, 255, 0.9) !important;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03) !important;
-        padding: 1.5rem !important;
-    }
-
-    /* Metric Cards Override */
+    /* Glass Cards for Metrics */
     div[data-testid="stMetric"] {
-        background: rgba(255, 255, 255, 0.85) !important;
+        background: rgba(255, 255, 255, 0.7) !important;
+        border: 1px solid rgba(255, 255, 255, 0.8) !important;
         border-radius: 16px !important;
-        border: 1px solid #E5E5EA !important;
-        padding: 1rem 1.2rem !important;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.02) !important;
+        padding: 16px 20px !important;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.03) !important;
     }
 
-    /* File Uploader Light Mode High Contrast Fix */
-    div[data-testid="stFileUploader"] {
-        background-color: #FFFFFF !important;
-        border: 2px dashed #0071E3 !important;
-        border-radius: 16px !important;
-        padding: 1.2rem !important;
-        box-shadow: 0 4px 15px rgba(0, 113, 227, 0.05) !important;
+    div[data-testid="stMetricLabel"] {
+        color: #86868B !important;
+        font-size: 0.85rem !important;
+        font-weight: 600 !important;
     }
 
-    /* Buttons */
-    .stButton>button {
+    div[data-testid="stMetricValue"] {
+        color: #0A2540 !important;
+        font-weight: 700 !important;
+    }
+
+    /* Primary Navy Accent Button */
+    .stButton>button, .stDownloadButton>button {
         background-color: #0A2540 !important;
         color: #FFFFFF !important;
         border-radius: 12px !important;
+        border: none !important;
         font-weight: 600 !important;
         padding: 0.6rem 1.8rem !important;
-        border: none !important;
-        transition: all 0.2s ease;
+        box-shadow: 0 4px 12px rgba(10, 37, 64, 0.2) !important;
+        transition: all 0.2s ease !important;
     }
-    .stButton>button:hover {
-        background-color: #0071E3 !important;
-        box-shadow: 0 4px 14px rgba(0, 113, 227, 0.3) !important;
+
+    .stButton>button:hover, .stDownloadButton>button:hover {
+        background-color: #FF6B00 !important;
+        box-shadow: 0 6px 16px rgba(255, 107, 0, 0.3) !important;
+    }
+    
+    /* Tabs */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 12px;
+    }
+    .stTabs [data-baseweb="tab"] {
+        border-radius: 10px;
+        padding: 10px 20px;
+        background-color: rgba(255, 255, 255, 0.6);
+        color: #1D1D1F;
+        font-weight: 600;
+        border: 1px solid #E5E5EA;
+    }
+    .stTabs [aria-selected="true"] {
+        background-color: #0A2540 !important;
+        color: #FFFFFF !important;
+        border: 1px solid #0A2540 !important;
     }
 </style>
 """, unsafe_allow_html=True)
 
 
-class CatalogDataValidator:
+# --- Data Validator Logic ---
+class DataValidator:
     def __init__(self, df: pd.DataFrame):
         self.df = df.copy()
         self.errors = []
         self.countries = ['UAE', 'OMAN', 'QATAR', 'KUWAIT', 'BAHRAIN', 'SAUDI']
 
-    def log_error(self, row_idx, sku, brand, column, message):
+    def log_error(self, row_idx, sku, column, message):
         self.errors.append({
-            'Excel Row': row_idx + 2,
-            'SKU': sku,
-            'Brand': brand,
+            'Row': row_idx + 2,
+            'SKU': sku if sku else 'N/A',
             'Column': column,
-            'Violation Error Message': message
+            'Error': message
         })
 
-    def execute_validation(self):
-        # 1-to-1 Brand Name mapping check
-        brand_map = {}
-        if 'Brand_Name' in self.df.columns and 'brand_id' in self.df.columns:
-            for _, r in self.df.iterrows():
-                b = str(r['Brand_Name']).strip()
-                b_id = str(r['brand_id']).strip()
-                if b and b_id and b != 'nan':
-                    if b not in brand_map:
-                        brand_map[b] = set()
-                    brand_map[b].add(b_id)
+    def run_all_validations(self):
+        self.validate_brand_integrity()
+        self.validate_barcodes()
 
-        # Duplicate Barcode check
-        bc_counts = self.df['barcode_value'].value_counts() if 'barcode_value' in self.df.columns else {}
-
-        # Row-level iterations
         for idx, row in self.df.iterrows():
-            sku = str(row.get('product_model_no', f'ROW-{idx+2}')).strip()
-            brand = str(row.get('Brand_Name', 'Unknown')).strip()
-
-            # 1. product_title checks
-            t_col = 'product_title'
-            if t_col in row and not pd.isna(row[t_col]):
-                title = str(row[t_col]).strip()
-                
-                # Length check
-                if not (150 <= len(title) <= 180):
-                    self.log_error(idx, sku, brand, t_col, f"Title length ({len(title)}) out of range [150-180].")
-                
-                # Must start with Brand_Name
-                if brand != 'Unknown' and not title.startswith(brand):
-                    self.log_error(idx, sku, brand, t_col, f"Title MUST start with Brand_Name '{brand}'.")
-                
-                # Must end with product_model_no
-                if 'product_model_no' in row and not pd.isna(row['product_model_no']):
-                    if not title.endswith(sku):
-                        self.log_error(idx, sku, brand, t_col, f"Title MUST end with product_model_no '{sku}'.")
-                    if f" - {sku}" not in title:
-                        self.log_error(idx, sku, brand, t_col, f"Title must contain hyphen format ' - {sku}' before model no.")
-
-                # Forbidden Punctuation Check
-                forbidden = r'[\(\)\&\+\.\/:;\'"%\#@!–—]'
-                if re.search(forbidden, title):
-                    self.log_error(idx, sku, brand, t_col, "Contains forbidden punctuation or en/em dashes.")
-            else:
-                self.log_error(idx, sku, brand, t_col, "product_title is missing.")
-
-            # 2. Brand mapping check
-            if brand in brand_map and len(brand_map[brand]) > 1:
-                self.log_error(idx, sku, brand, 'Brand_Name', f"Brand '{brand}' maps to multiple brand_ids.")
-
-            # 3. product_status
-            if 'product_status' in row and str(row['product_status']).strip() not in ['1', '1.0']:
-                self.log_error(idx, sku, brand, 'product_status', f"product_status must equal 1.")
-
-            # 4. barcode_value uniqueness
-            if 'barcode_value' in row and not pd.isna(row['barcode_value']):
-                bc = row['barcode_value']
-                if bc_counts.get(bc, 0) > 1:
-                    self.log_error(idx, sku, brand, 'barcode_value', f"Duplicate barcode_value '{bc}'.")
-
-            # 5. ship_charge_AED
-            if 'ship_charge_AED' in row and str(row['ship_charge_AED']).strip() not in ['10', '10.0']:
-                self.log_error(idx, sku, brand, 'ship_charge_AED', "ship_charge_AED must equal 10.")
-
-            # 6. product_long_description
-            if 'product_long_description' in row and (pd.isna(row['product_long_description']) or str(row['product_long_description']).strip() == ''):
-                self.log_error(idx, sku, brand, 'product_long_description', "product_long_description cannot be empty.")
-
-            # 7. product_highlight_*
-            for col in [c for c in self.df.columns if c.startswith('product_highlight_')]:
-                val = str(row[col]).strip() if not pd.isna(row[col]) else ''
-                if val:
-                    if not (120 <= len(val) <= 150):
-                        self.log_error(idx, sku, brand, col, f"Highlight length ({len(val)}) out of range [120-150].")
-                    if val.endswith('.'):
-                        self.log_error(idx, sku, brand, col, "Must NOT end with a full stop (.).")
-                    if ';' in val:
-                        self.log_error(idx, sku, brand, col, "Must NOT contain semi-colons (;).")
-
-            # 8. product_attribute_*
-            for col in [c for c in self.df.columns if c.startswith('product_attribute_')]:
-                val = str(row[col]).strip() if not pd.isna(row[col]) else ''
-                if val and not re.match(r'^[^\s:]+:[^\s:].*$', val):
-                    self.log_error(idx, sku, brand, col, "Format must be 'Header:Value' with NO spaces around colon.")
-
-            # 9. Pricing Checks
-            for c in self.countries:
-                c_col = f"cost_{c}"
-                p_col = f"price_{c}"
-                sp_col = f"sp_price_{c}"
-                if c_col in row and not pd.isna(row[c_col]):
-                    try:
-                        cost = float(row[c_col])
-                        if p_col in row and not pd.isna(row[p_col]) and cost >= float(row[p_col]):
-                            self.log_error(idx, sku, brand, c_col, f"cost ({cost}) must be lower than price.")
-                        if sp_col in row and not pd.isna(row[sp_col]) and cost >= float(row[sp_col]):
-                            self.log_error(idx, sku, brand, c_col, f"cost ({cost}) must be lower than sp_price.")
-                    except ValueError:
-                        pass
+            sku = str(row['product_model_no']).strip() if 'product_model_no' in row and not pd.isna(row['product_model_no']) else 'N/A'
+            
+            self.validate_product_title(idx, sku, row)
+            self.validate_product_status(idx, sku, row)
+            self.validate_shipping(idx, sku, row)
+            self.validate_long_description(idx, sku, row)
+            self.validate_highlights(idx, sku, row)
+            self.validate_attributes(idx, sku, row)
+            self.validate_seo_titles(idx, sku, row)
+            self.validate_seo_descriptions(idx, sku, row)
+            self.validate_seo_keywords(idx, sku, row)
+            self.validate_pricing(idx, sku, row)
 
         return pd.DataFrame(self.errors)
 
+    def validate_product_title(self, idx, sku, row):
+        col = 'product_title'
+        if col not in row or pd.isna(row[col]):
+            self.log_error(idx, sku, col, "Title is missing.")
+            return
 
-st.markdown("""
-<div class="header-banner">
+        title = str(row[col]).strip()
+
+        # Length check [150-180]
+        if not (150 <= len(title) <= 180):
+            self.log_error(idx, sku, col, f"Title length ({len(title)}) out of range [150-180].")
+
+        # Disallowed characters check
+        disallowed = r'[\(\)\&\+\.\/:;\'"%\#@!–—]'
+        if re.search(disallowed, title):
+            self.log_error(idx, sku, col, "Contains forbidden punctuation or copy-pasted dashes.")
+
+        # Must start with Brand_Name
+        brand = str(row['Brand_Name']).strip() if 'Brand_Name' in row and not pd.isna(row['Brand_Name']) else ""
+        if brand and not title.startswith(brand):
+            self.log_error(idx, sku, col, f"Title must start with Brand Name '{brand}'.")
+
+        # Must end with product_model_no (SKU) formatted as " - SKU"
+        if sku != 'N/A':
+            expected_ending = f" - {sku}"
+            if not title.endswith(expected_ending):
+                self.log_error(idx, sku, col, f"Title must end with ' - {sku}'.")
+
+    def validate_brand_integrity(self):
+        if 'Brand_Name' in self.df.columns and 'brand_id' in self.df.columns:
+            grouped = self.df.groupby('Brand_Name')['brand_id'].nunique()
+            invalid_brands = grouped[grouped > 1].index.tolist()
+
+            for idx, row in self.df.iterrows():
+                sku = str(row['product_model_no']).strip() if 'product_model_no' in row and not pd.isna(row['product_model_no']) else 'N/A'
+                if row['Brand_Name'] in invalid_brands:
+                    self.log_error(idx, sku, 'Brand_Name', f"Brand '{row['Brand_Name']}' maps to multiple brand_ids.")
+
+    def validate_product_status(self, idx, sku, row):
+        col = 'product_status'
+        if col in row and str(row[col]).strip() not in ['1', '1.0']:
+            self.log_error(idx, sku, col, f"Status is '{row[col]}'; must be 1.")
+
+    def validate_barcodes(self):
+        col = 'barcode_value'
+        if col in self.df.columns:
+            duplicates = self.df[self.df.duplicated(subset=[col], keep=False)]
+            for idx in duplicates.index:
+                val = self.df.loc[idx, col]
+                sku = str(self.df.loc[idx, 'product_model_no']).strip() if 'product_model_no' in self.df.columns and not pd.isna(self.df.loc[idx, 'product_model_no']) else 'N/A'
+                if not pd.isna(val):
+                    self.log_error(idx, sku, col, f"Duplicate barcode value: '{val}'.")
+
+    def validate_shipping(self, idx, sku, row):
+        col = 'ship_charge_AED'
+        if col in row and str(row[col]).strip() not in ['10', '10.0']:
+            self.log_error(idx, sku, col, f"Ship charge is '{row[col]}'; must be 10.")
+
+    def validate_long_description(self, idx, sku, row):
+        col = 'product_long_description'
+        if col in row and (pd.isna(row[col]) or str(row[col]).strip() == ""):
+            self.log_error(idx, sku, col, "Product long description is empty.")
+
+    def validate_highlights(self, idx, sku, row):
+        highlight_cols = [c for c in self.df.columns if c.startswith('product_highlight_')]
+        for col in highlight_cols:
+            val = str(row[col]) if not pd.isna(row[col]) else ""
+            if val:
+                if ';' in val:
+                    self.log_error(idx, sku, col, "Semicolons ';' are not allowed in highlights.")
+                if val.endswith('.'):
+                    self.log_error(idx, sku, col, "Must not end with a full stop.")
+                if not (120 <= len(val) <= 150):
+                    self.log_error(idx, sku, col, f"Length ({len(val)}) out of range [120-150].")
+
+    def validate_attributes(self, idx, sku, row):
+        attr_cols = [c for c in self.df.columns if c.startswith('product_attribute_')]
+        for col in attr_cols:
+            val = str(row[col]) if not pd.isna(row[col]) else ""
+            if val and not re.match(r'^[^\s:]+:[^\s:].*$', val):
+                self.log_error(idx, sku, col, "Invalid format. Expected 'Header:Value' with no spaces around colon.")
+
+    def validate_seo_titles(self, idx, sku, row):
+        for country in self.countries:
+            seo_col = f"seo_title_{country}"
+            cost_col = f"cost_{country}"
+            if cost_col in row and not pd.isna(row[cost_col]):
+                val = str(row[seo_col]) if seo_col in row and not pd.isna(row[seo_col]) else ""
+                expected_suffix = f"Online at Best Prices in {country} | Ourshopee"
+                if not val.endswith(expected_suffix):
+                    self.log_error(idx, sku, seo_col, f"Must end with '{expected_suffix}'.")
+
+    def validate_seo_descriptions(self, idx, sku, row):
+        for country in self.countries:
+            col = f"seo_description_{country}"
+            val = str(row[col]) if col in row and not pd.isna(row[col]) else ""
+            if val:
+                if not val.startswith("Buy "):
+                    self.log_error(idx, sku, col, "Must start with 'Buy '.")
+                expected_suffix = f". Explore great deals at the best price. Get fast delivery across {country} | Ourshopee."
+                if not val.endswith(expected_suffix):
+                    self.log_error(idx, sku, col, f"Must end with '{expected_suffix}'.")
+
+    def validate_seo_keywords(self, idx, sku, row):
+        for country in self.countries:
+            col = f"seo_keywords_{country}"
+            val = str(row[col]) if col in row and not pd.isna(row[col]) else ""
+            if val:
+                if re.search(r'\s,', val):
+                    self.log_error(idx, sku, col, "Comma should not have a space before it.")
+                if val.strip().endswith(','):
+                    self.log_error(idx, sku, col, "Must not end with a trailing comma.")
+
+    def validate_pricing(self, idx, sku, row):
+        cost_cols = [c for c in self.df.columns if c.startswith('cost_')]
+        for c_col in cost_cols:
+            suffix = c_col.replace('cost_', '')
+            p_col, sp_col = f"price_{suffix}", f"sp_price_{suffix}"
+            try:
+                cost = float(row[c_col]) if c_col in row and not pd.isna(row[c_col]) else None
+                price = float(row[p_col]) if p_col in row and not pd.isna(row[p_col]) else None
+                sp_price = float(row[sp_col]) if sp_col in row and not pd.isna(row[sp_col]) else None
+
+                if cost is not None:
+                    if price is not None and cost >= price:
+                        self.log_error(idx, sku, c_col, f"Cost ({cost}) must be lower than price ({price}).")
+                    if sp_price is not None and cost >= sp_price:
+                        self.log_error(idx, sku, c_col, f"Cost ({cost}) must be lower than sp_price ({sp_price}).")
+            except ValueError:
+                self.log_error(idx, sku, c_col, "Non-numeric values in pricing columns.")
+
+
+# --- UI Setup ---
+LOGO_URL = "https://raw.githubusercontent.com/streamlit/app-examples/main/assets/logo.png"  # Placeholder or direct URL
+
+st.markdown(f"""
+<div class="header-card">
     <div>
-        <h1 class="header-title-text">Our Shopee Basic Data Checks</h1>
-        <p class="header-subtitle">Quality Assurance & Product Catalog Compliance Engine</p>
+        <h1 class="gradient-title">Our Shopee Basic Data Checks</h1>
+        <div class="header-sub">Upload catalog spreadsheets for automatic title, SKU, SEO, highlight, and price validation.</div>
     </div>
-    <div style="background: rgba(255,255,255,0.9); padding: 10px 18px; border-radius: 16px; border: 1px solid #E5E5EA; text-align: center;">
-        <span style="font-size: 14px; font-weight: 800; color: #0A2540; display: block;">OURSHOPEE</span>
-        <span style="font-size: 10px; font-weight: 700; color: #FF6B00;">VALIDATION APP</span>
-    </div>
+    <img src="https://i.ibb.co/6P0w4H9/ourshopee-logo.jpg" class="logo-img" alt="OurShopee Logo" onerror="this.onerror=null; this.src='https://via.placeholder.com/80/0A2540/FFFFFF?text=OS';">
 </div>
 """, unsafe_allow_html=True)
 
-# Main Navigation Sidebar
-st.sidebar.title("Navigation & Settings")
-page = st.sidebar.radio("Select View Page", ["Validator App", "SKU Issues Dashboard"])
-
-uploaded_file = st.sidebar.file_uploader("Upload Product File (.xlsx, .csv)", type=["csv", "xlsx", "xls"])
+uploaded_file = st.file_uploader("Drop your Excel or CSV file here", type=["csv", "xlsx", "xls"])
 
 if uploaded_file is not None:
-    df = pd.read_csv(uploaded_file) if uploaded_file.name.endswith('.csv') else pd.read_excel(uploaded_file)
-    validator = CatalogDataValidator(df)
-    err_df = validator.execute_validation()
-
-    if page == "Validator App":
-        st.subheader("Validation Overview")
+    try:
+        df = pd.read_csv(uploaded_file) if uploaded_file.name.endswith('.csv') else pd.read_excel(uploaded_file)
         
-        # KPI Row
-        col1, col2, col3, col4 = st.columns(4)
-        col1.metric("Total Catalog Rows", len(df))
-        flagged_count = err_df['SKU'].nunique() if not err_df.empty else 0
-        col2.metric("Flagged SKUs", flagged_count)
-        col3.metric("Total Rule Errors", len(err_df))
-        pass_rate = round(((len(df) - flagged_count) / len(df)) * 100, 1) if len(df) > 0 else 100
-        col4.metric("Catalog Compliance Rate", f"{pass_rate}%")
+        validator = DataValidator(df)
+        error_df = validator.run_all_validations()
+
+        total_rows = len(df)
+        error_rows = error_df['Row'].nunique() if not error_df.empty else 0
+        total_errors = len(error_df)
+
+        # Overview Cards
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("Total Rows Evaluated", f"{total_rows:,}")
+        c2.metric("Flagged Rows", f"{error_rows:,}")
+        c3.metric("Total Issues", f"{total_errors:,}")
+        c4.metric("Compliance Rate", f"{((total_rows - error_rows) / total_rows * 100):.1f}%" if total_rows > 0 else "100%")
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        if not err_df.empty:
-            st.error(f"Found {len(err_df)} errors across {flagged_count} SKUs.")
-            st.dataframe(err_df, use_container_width=True)
+        if not error_df.empty:
+            tab1, tab2 = st.tabs(["📋 Validation Issue Logs", "📊 SKU Issue Dashboard"])
 
-            # Export Button
-            output = io.BytesIO()
-            with pd.ExcelWriter(output, engine='openpyxl') as writer:
-                df.to_excel(writer, index=False, sheet_name='Catalog Data')
-                err_df.to_excel(writer, index=False, sheet_name='Validation Errors')
-            
-            st.download_button(
-                label="Download Validation Excel Report",
-                data=output.getvalue(),
-                file_name="OurShopee_Data_Validation_Report.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
+            with tab1:
+                st.subheader("Row-by-Row Error Logs")
+                st.dataframe(error_df, use_container_width=True, height=380)
+
+                output = io.BytesIO()
+                with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                    df.to_excel(writer, index=False, sheet_name='Original Data')
+                    error_df.to_excel(writer, index=False, sheet_name='Validation Errors')
+
+                st.download_button(
+                    label="Download Full Error Report (.xlsx)",
+                    data=output.getvalue(),
+                    file_name="ourshopee_validation_report.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
+
+            with tab2:
+                st.subheader("SKU Issue Breakdown Dashboard")
+                
+                # Breakdown by Column
+                col_breakdown = error_df['Column'].value_counts().reset_index()
+                col_breakdown.columns = ['Column Field', 'Error Count']
+                
+                col_left, col_right = st.columns([1, 1])
+                with col_left:
+                    st.markdown("**Top Invalid Fields**")
+                    st.bar_chart(col_breakdown.set_index('Column Field'))
+
+                with col_right:
+                    st.markdown("**SKUs with Most Violations**")
+                    sku_breakdown = error_df[error_df['SKU'] != 'N/A']['SKU'].value_counts().head(10).reset_index()
+                    sku_breakdown.columns = ['SKU ID', 'Total Errors']
+                    st.dataframe(sku_breakdown, use_container_width=True)
+
         else:
-            st.success("🎉 All data checks passed cleanly!")
+            st.balloons()
+            st.success("All data validations passed! File is completely clean.")
 
-    elif page == "SKU Issues Dashboard":
-        st.subheader("SKU Issue Breakdown Analytics")
-        if not err_df.empty:
-            # Bar chart by Column
-            col_counts = err_df['Column'].value_counts()
-            st.write("##### Violations Count by Column")
-            st.bar_chart(col_counts)
-
-            st.write("##### Flagged SKU List")
-            sku_summary = err_df.groupby(['SKU', 'Brand']).agg({'Violation Error Message': 'count', 'Column': lambda x: ', '.join(set(x))}).reset_index()
-            sku_summary.columns = ['SKU Model No', 'Brand', 'Total Errors', 'Violated Columns']
-            st.dataframe(sku_summary, use_container_width=True)
-        else:
-            st.info("No validation errors recorded. Load a file with issues to explore the dashboard.")
-else:
-    st.info("👈 Please upload an Excel or CSV catalog file in the sidebar to begin checking.")
+    except Exception as e:
+        st.error(f"Error reading file: {str(e)}")
