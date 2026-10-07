@@ -1,9 +1,10 @@
 import io
 import re
+import base64
 import pandas as pd
 import streamlit as st
 
-# Set page configuration
+# --- Page Config ---
 st.set_page_config(
     page_title="Our Shopee Basic Data Checks",
     page_icon="🛍️",
@@ -11,143 +12,147 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Apple-inspired Frosted Glass / Light Theme CSS
+# --- Base64 Embedded Logo (Our Shopee Logo) ---
+LOGO_BASE64 = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBxMSEhUTExMVFhUXGR4aGBgYGR0dIBodHR0fHx0dHR0dHSggHxlolx0dITEiJSkrLi4uHR8zODMtNygtLisBCgoKDg0OGxAQGy0lICYtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLf/AABEIAOEA4QMBEQACEQEDEQH/xAAbAAACAwEBAQAAAAAAAAAAAAADBAECBQAGB//EAEQQAAECBAQDBQUGBQIFAwUAAAECEQADEiExQVFhBHFgA4GRsRMiA6HB0fAUMlKS4fFCYnKCsiNT0sKiM3OTFRY0Y2TD/8QAGQEAAwEBAQAAAAAAAAAAAAAAAAIDAQQF/8QAJhEAAgICAgICAwEBAQEAAAAAAAECEQMhEjEiQVFxBBNSYZFyI//aAAw50005/2Q=="
+
+# --- Comprehensive Apple Light/Dark Universal Theme Styling ---
 st.markdown("""
 <style>
-    /* Force Light Background everywhere */
+    /* Force Light background canvas & readable high-contrast typography across light/dark modes */
     .stApp, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
         background-color: #F5F5F7 !important;
         color: #1D1D1F !important;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
     }
-    
-    /* Header Card */
-    .header-card {
-        background: rgba(255, 255, 255, 0.75);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.8);
-        border-radius: 18px;
-        padding: 24px 32px;
-        margin-bottom: 28px;
-        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.06);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-    
-    .gradient-title {
-        font-size: 2.2rem;
-        font-weight: 800;
-        background: linear-gradient(135deg, #0A2540 0%, #D4AF37 50%, #FF6B00 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        letter-spacing: -0.5px;
-        margin: 0;
-    }
-    
-    .header-sub {
-        color: #86868B;
-        font-size: 0.95rem;
-        margin-top: 4px;
-        font-weight: 400;
-    }
-    
-    .logo-img {
-        width: 80px;
-        height: 80px;
-        border-radius: 16px;
-        box-shadow: 0 4px 14px rgba(0,0,0,0.1);
-        object-fit: cover;
+
+    /* Force all prose text, labels, and spans to dark gray/black */
+    p, span, label, h1, h2, h3, h4, h5, h6, div {
+        color: #1D1D1F;
     }
 
-    /* Clean Uploader Box */
-    [data-testid="stFileUploader"] {
-        background: rgba(255, 255, 255, 0.8) !important;
+    /* Header Container Card */
+    .header-card {
+        background: #FFFFFF !important;
+        border: 1px solid #E5E5EA !important;
+        border-radius: 18px !important;
+        padding: 24px 32px !important;
+        margin-bottom: 24px !important;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04) !important;
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+    }
+
+    .gradient-title {
+        font-size: 2.1rem !important;
+        font-weight: 800 !important;
+        background: linear-gradient(135deg, #0A2540 0%, #D4AF37 50%, #FF6B00 100%) !important;
+        -webkit-background-clip: text !important;
+        -webkit-text-fill-color: transparent !important;
+        letter-spacing: -0.5px !important;
+        margin: 0 0 6px 0 !important;
+    }
+
+    .header-sub {
+        color: #86868B !important;
+        font-size: 0.95rem !important;
+        font-weight: 400 !important;
+        margin: 0 !important;
+    }
+
+    .logo-img {
+        width: 72px !important;
+        height: 72px !important;
+        border-radius: 16px !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.12) !important;
+        object-fit: cover !important;
+        background-color: #5C32CA !important;
+    }
+
+    /* Uploader Visibility in Dark Mode */
+    div[data-testid="stFileUploader"] {
+        background-color: #FFFFFF !important;
         border: 2px dashed #0A2540 !important;
         border-radius: 16px !important;
-        padding: 20px !important;
+        padding: 24px !important;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.03) !important;
     }
-    
-    [data-testid="stFileUploader"] section {
-        background: transparent !important;
-    }
-    
-    [data-testid="stFileUploader"] label, [data-testid="stFileUploader"] span {
+    div[data-testid="stFileUploader"] * {
         color: #1D1D1F !important;
     }
 
-    /* Glass Cards for Metrics */
-    div[data-testid="stMetric"] {
-        background: rgba(255, 255, 255, 0.7) !important;
-        border: 1px solid rgba(255, 255, 255, 0.8) !important;
-        border-radius: 16px !important;
-        padding: 16px 20px !important;
-        box-shadow: 0 4px 16px rgba(0,0,0,0.03) !important;
+    /* Universal Button Fixes */
+    .stButton>button, .stDownloadButton>button {
+        background-color: #0A2540 !important;
+        color: #FFFFFF !important;
+        border-radius: 10px !important;
+        border: none !important;
+        font-weight: 600 !important;
+        padding: 0.55rem 1.4rem !important;
+        box-shadow: 0 4px 12px rgba(10, 37, 64, 0.2) !important;
+        transition: all 0.2s ease !important;
+    }
+    .stButton>button:hover, .stDownloadButton>button:hover {
+        background-color: #FF6B00 !important;
+        color: #FFFFFF !important;
+        box-shadow: 0 6px 16px rgba(255, 107, 0, 0.3) !important;
     }
 
+    /* Metrics Styling */
+    div[data-testid="stMetric"] {
+        background-color: #FFFFFF !important;
+        border: 1px solid #E5E5EA !important;
+        border-radius: 14px !important;
+        padding: 16px 20px !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.02) !important;
+    }
     div[data-testid="stMetricLabel"] {
         color: #86868B !important;
         font-size: 0.85rem !important;
         font-weight: 600 !important;
     }
-
     div[data-testid="stMetricValue"] {
         color: #0A2540 !important;
         font-weight: 700 !important;
     }
 
-    /* Primary Navy Accent Button */
-    .stButton>button, .stDownloadButton>button {
-        background-color: #0A2540 !important;
-        color: #FFFFFF !important;
-        border-radius: 12px !important;
-        border: none !important;
-        font-weight: 600 !important;
-        padding: 0.6rem 1.8rem !important;
-        box-shadow: 0 4px 12px rgba(10, 37, 64, 0.2) !important;
-        transition: all 0.2s ease !important;
-    }
-
-    .stButton>button:hover, .stDownloadButton>button:hover {
-        background-color: #FF6B00 !important;
-        box-shadow: 0 6px 16px rgba(255, 107, 0, 0.3) !important;
-    }
-    
-    /* Tabs */
+    /* Tabs Styling */
     .stTabs [data-baseweb="tab-list"] {
         gap: 12px;
     }
     .stTabs [data-baseweb="tab"] {
-        border-radius: 10px;
-        padding: 10px 20px;
-        background-color: rgba(255, 255, 255, 0.6);
-        color: #1D1D1F;
+        border-radius: 8px;
+        padding: 8px 18px;
+        background-color: #E5E5EA;
+        color: #1D1D1F !important;
         font-weight: 600;
-        border: 1px solid #E5E5EA;
+        border: none;
     }
     .stTabs [aria-selected="true"] {
         background-color: #0A2540 !important;
         color: #FFFFFF !important;
-        border: 1px solid #0A2540 !important;
+    }
+    .stTabs [aria-selected="true"] * {
+        color: #FFFFFF !important;
     }
 </style>
 """, unsafe_allow_html=True)
 
 
-# --- Data Validator Logic ---
+# --- Data Validation Engine ---
 class DataValidator:
     def __init__(self, df: pd.DataFrame):
         self.df = df.copy()
         self.errors = []
         self.countries = ['UAE', 'OMAN', 'QATAR', 'KUWAIT', 'BAHRAIN', 'SAUDI']
 
-    def log_error(self, row_idx, sku, column, message):
+    def log_error(self, row_idx, sku, column, category, message):
         self.errors.append({
             'Row': row_idx + 2,
             'SKU': sku if sku else 'N/A',
             'Column': column,
-            'Error': message
+            'Category': category,
+            'Error Description': message
         })
 
     def run_all_validations(self):
@@ -172,33 +177,35 @@ class DataValidator:
 
     def validate_product_title(self, idx, sku, row):
         col = 'product_title'
+        cat = 'Title Rules'
         if col not in row or pd.isna(row[col]):
-            self.log_error(idx, sku, col, "Title is missing.")
+            self.log_error(idx, sku, col, cat, "Title is missing.")
             return
 
         title = str(row[col]).strip()
 
-        # Length check [150-180]
+        # Length check
         if not (150 <= len(title) <= 180):
-            self.log_error(idx, sku, col, f"Title length ({len(title)}) out of range [150-180].")
+            self.log_error(idx, sku, col, cat, f"Title length ({len(title)}) out of range [150-180].")
 
-        # Disallowed characters check
+        # Disallowed characters
         disallowed = r'[\(\)\&\+\.\/:;\'"%\#@!–—]'
         if re.search(disallowed, title):
-            self.log_error(idx, sku, col, "Contains forbidden punctuation or copy-pasted dashes.")
+            self.log_error(idx, sku, col, cat, "Contains forbidden punctuation or copy-pasted dashes.")
 
         # Must start with Brand_Name
         brand = str(row['Brand_Name']).strip() if 'Brand_Name' in row and not pd.isna(row['Brand_Name']) else ""
         if brand and not title.startswith(brand):
-            self.log_error(idx, sku, col, f"Title must start with Brand Name '{brand}'.")
+            self.log_error(idx, sku, col, cat, f"Title must start with Brand Name '{brand}'.")
 
-        # Must end with product_model_no (SKU) formatted as " - SKU"
+        # Must end with product_model_no formatted as " - SKU"
         if sku != 'N/A':
             expected_ending = f" - {sku}"
             if not title.endswith(expected_ending):
-                self.log_error(idx, sku, col, f"Title must end with ' - {sku}'.")
+                self.log_error(idx, sku, col, cat, f"Title must end with SKU format ' - {sku}'.")
 
     def validate_brand_integrity(self):
+        cat = 'Brand Mapping'
         if 'Brand_Name' in self.df.columns and 'brand_id' in self.df.columns:
             grouped = self.df.groupby('Brand_Name')['brand_id'].nunique()
             invalid_brands = grouped[grouped > 1].index.tolist()
@@ -206,12 +213,12 @@ class DataValidator:
             for idx, row in self.df.iterrows():
                 sku = str(row['product_model_no']).strip() if 'product_model_no' in row and not pd.isna(row['product_model_no']) else 'N/A'
                 if row['Brand_Name'] in invalid_brands:
-                    self.log_error(idx, sku, 'Brand_Name', f"Brand '{row['Brand_Name']}' maps to multiple brand_ids.")
+                    self.log_error(idx, sku, 'Brand_Name', cat, f"Brand '{row['Brand_Name']}' maps to multiple brand_ids.")
 
     def validate_product_status(self, idx, sku, row):
         col = 'product_status'
         if col in row and str(row[col]).strip() not in ['1', '1.0']:
-            self.log_error(idx, sku, col, f"Status is '{row[col]}'; must be 1.")
+            self.log_error(idx, sku, col, 'Product Status', f"Status is '{row[col]}'; must equal 1.")
 
     def validate_barcodes(self):
         col = 'barcode_value'
@@ -221,17 +228,17 @@ class DataValidator:
                 val = self.df.loc[idx, col]
                 sku = str(self.df.loc[idx, 'product_model_no']).strip() if 'product_model_no' in self.df.columns and not pd.isna(self.df.loc[idx, 'product_model_no']) else 'N/A'
                 if not pd.isna(val):
-                    self.log_error(idx, sku, col, f"Duplicate barcode value: '{val}'.")
+                    self.log_error(idx, sku, col, 'Duplicates', f"Duplicate barcode value: '{val}'.")
 
     def validate_shipping(self, idx, sku, row):
         col = 'ship_charge_AED'
         if col in row and str(row[col]).strip() not in ['10', '10.0']:
-            self.log_error(idx, sku, col, f"Ship charge is '{row[col]}'; must be 10.")
+            self.log_error(idx, sku, col, 'Shipping', f"Ship charge is '{row[col]}'; must equal 10.")
 
     def validate_long_description(self, idx, sku, row):
         col = 'product_long_description'
         if col in row and (pd.isna(row[col]) or str(row[col]).strip() == ""):
-            self.log_error(idx, sku, col, "Product long description is empty.")
+            self.log_error(idx, sku, col, 'Descriptions', "Product long description is empty.")
 
     def validate_highlights(self, idx, sku, row):
         highlight_cols = [c for c in self.df.columns if c.startswith('product_highlight_')]
@@ -239,18 +246,18 @@ class DataValidator:
             val = str(row[col]) if not pd.isna(row[col]) else ""
             if val:
                 if ';' in val:
-                    self.log_error(idx, sku, col, "Semicolons ';' are not allowed in highlights.")
+                    self.log_error(idx, sku, col, 'Highlights', "Semicolons ';' are not allowed in highlights.")
                 if val.endswith('.'):
-                    self.log_error(idx, sku, col, "Must not end with a full stop.")
+                    self.log_error(idx, sku, col, 'Highlights', "Must not end with a full stop.")
                 if not (120 <= len(val) <= 150):
-                    self.log_error(idx, sku, col, f"Length ({len(val)}) out of range [120-150].")
+                    self.log_error(idx, sku, col, 'Highlights', f"Length ({len(val)}) out of range [120-150].")
 
     def validate_attributes(self, idx, sku, row):
         attr_cols = [c for c in self.df.columns if c.startswith('product_attribute_')]
         for col in attr_cols:
             val = str(row[col]) if not pd.isna(row[col]) else ""
             if val and not re.match(r'^[^\s:]+:[^\s:].*$', val):
-                self.log_error(idx, sku, col, "Invalid format. Expected 'Header:Value' with no spaces around colon.")
+                self.log_error(idx, sku, col, 'Attributes', "Invalid format. Expected 'Header:Value' with no space around colon.")
 
     def validate_seo_titles(self, idx, sku, row):
         for country in self.countries:
@@ -260,7 +267,7 @@ class DataValidator:
                 val = str(row[seo_col]) if seo_col in row and not pd.isna(row[seo_col]) else ""
                 expected_suffix = f"Online at Best Prices in {country} | Ourshopee"
                 if not val.endswith(expected_suffix):
-                    self.log_error(idx, sku, seo_col, f"Must end with '{expected_suffix}'.")
+                    self.log_error(idx, sku, seo_col, 'SEO Titles', f"Must end with '{expected_suffix}'.")
 
     def validate_seo_descriptions(self, idx, sku, row):
         for country in self.countries:
@@ -268,10 +275,10 @@ class DataValidator:
             val = str(row[col]) if col in row and not pd.isna(row[col]) else ""
             if val:
                 if not val.startswith("Buy "):
-                    self.log_error(idx, sku, col, "Must start with 'Buy '.")
+                    self.log_error(idx, sku, col, 'SEO Descriptions', "Must start with 'Buy '.")
                 expected_suffix = f". Explore great deals at the best price. Get fast delivery across {country} | Ourshopee."
                 if not val.endswith(expected_suffix):
-                    self.log_error(idx, sku, col, f"Must end with '{expected_suffix}'.")
+                    self.log_error(idx, sku, col, 'SEO Descriptions', f"Must end with '{expected_suffix}'.")
 
     def validate_seo_keywords(self, idx, sku, row):
         for country in self.countries:
@@ -279,9 +286,9 @@ class DataValidator:
             val = str(row[col]) if col in row and not pd.isna(row[col]) else ""
             if val:
                 if re.search(r'\s,', val):
-                    self.log_error(idx, sku, col, "Comma should not have a space before it.")
+                    self.log_error(idx, sku, col, 'SEO Keywords', "Comma should not have a space before it.")
                 if val.strip().endswith(','):
-                    self.log_error(idx, sku, col, "Must not end with a trailing comma.")
+                    self.log_error(idx, sku, col, 'SEO Keywords', "Must not end with a trailing comma.")
 
     def validate_pricing(self, idx, sku, row):
         cost_cols = [c for c in self.df.columns if c.startswith('cost_')]
@@ -295,88 +302,33 @@ class DataValidator:
 
                 if cost is not None:
                     if price is not None and cost >= price:
-                        self.log_error(idx, sku, c_col, f"Cost ({cost}) must be lower than price ({price}).")
+                        self.log_error(idx, sku, c_col, 'Pricing', f"Cost ({cost}) must be lower than price ({price}).")
                     if sp_price is not None and cost >= sp_price:
-                        self.log_error(idx, sku, c_col, f"Cost ({cost}) must be lower than sp_price ({sp_price}).")
+                        self.log_error(idx, sku, c_col, 'Pricing', f"Cost ({cost}) must be lower than sp_price ({sp_price}).")
             except ValueError:
-                self.log_error(idx, sku, c_col, "Non-numeric values in pricing columns.")
+                self.log_error(idx, sku, c_col, 'Pricing', "Non-numeric values in pricing columns.")
 
 
-# --- UI Setup ---
-LOGO_URL = "https://raw.githubusercontent.com/streamlit/app-examples/main/assets/logo.png"  # Placeholder or direct URL
-
-st.markdown(f"""
-<div class="header-card">
-    <div>
-        <h1 class="gradient-title">Our Shopee Basic Data Checks</h1>
-        <div class="header-sub">Upload catalog spreadsheets for automatic title, SKU, SEO, highlight, and price validation.</div>
-    </div>
-    <img src="https://i.ibb.co/6P0w4H9/ourshopee-logo.jpg" class="logo-img" alt="OurShopee Logo" onerror="this.onerror=null; this.src='https://via.placeholder.com/80/0A2540/FFFFFF?text=OS';">
-</div>
-""", unsafe_allow_html=True)
-
-uploaded_file = st.file_uploader("Drop your Excel or CSV file here", type=["csv", "xlsx", "xls"])
-
-if uploaded_file is not None:
-    try:
-        df = pd.read_csv(uploaded_file) if uploaded_file.name.endswith('.csv') else pd.read_excel(uploaded_file)
-        
-        validator = DataValidator(df)
-        error_df = validator.run_all_validations()
-
-        total_rows = len(df)
-        error_rows = error_df['Row'].nunique() if not error_df.empty else 0
-        total_errors = len(error_df)
-
-        # Overview Cards
-        c1, c2, c3, c4 = st.columns(4)
-        c1.metric("Total Rows Evaluated", f"{total_rows:,}")
-        c2.metric("Flagged Rows", f"{error_rows:,}")
-        c3.metric("Total Issues", f"{total_errors:,}")
-        c4.metric("Compliance Rate", f"{((total_rows - error_rows) / total_rows * 100):.1f}%" if total_rows > 0 else "100%")
-
-        st.markdown("<br>", unsafe_allow_html=True)
-
-        if not error_df.empty:
-            tab1, tab2 = st.tabs(["📋 Validation Issue Logs", "📊 SKU Issue Dashboard"])
-
-            with tab1:
-                st.subheader("Row-by-Row Error Logs")
-                st.dataframe(error_df, use_container_width=True, height=380)
-
-                output = io.BytesIO()
-                with pd.ExcelWriter(output, engine='openpyxl') as writer:
-                    df.to_excel(writer, index=False, sheet_name='Original Data')
-                    error_df.to_excel(writer, index=False, sheet_name='Validation Errors')
-
-                st.download_button(
-                    label="Download Full Error Report (.xlsx)",
-                    data=output.getvalue(),
-                    file_name="ourshopee_validation_report.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                )
-
-            with tab2:
-                st.subheader("SKU Issue Breakdown Dashboard")
-                
-                # Breakdown by Column
-                col_breakdown = error_df['Column'].value_counts().reset_index()
-                col_breakdown.columns = ['Column Field', 'Error Count']
-                
-                col_left, col_right = st.columns([1, 1])
-                with col_left:
-                    st.markdown("**Top Invalid Fields**")
-                    st.bar_chart(col_breakdown.set_index('Column Field'))
-
-                with col_right:
-                    st.markdown("**SKUs with Most Violations**")
-                    sku_breakdown = error_df[error_df['SKU'] != 'N/A']['SKU'].value_counts().head(10).reset_index()
-                    sku_breakdown.columns = ['SKU ID', 'Total Errors']
-                    st.dataframe(sku_breakdown, use_container_width=True)
-
-        else:
-            st.balloons()
-            st.success("All data validations passed! File is completely clean.")
-
-    except Exception as e:
-        st.error(f"Error reading file: {str(e)}")
+# --- Helper Function to Create Sample Data ---
+def generate_sample_data():
+    return pd.DataFrame({
+        'product_model_no': ['SKU-1001', 'SKU-1002', 'SKU-1003', 'SKU-1004'],
+        'Brand_Name': ['Sony', 'Sony', 'Samsung', 'Apple'],
+        'brand_id': ['B-10', 'B-10', 'B-20', 'B-30'],
+        'product_title': [
+            'Sony Wireless Noise Canceling Headphones Extra Bass Premium Sound - SKU-1001',
+            'Incorrect Title Format Sample Without SKU End',
+            'Samsung OLED Smart TV High Dynamic Range Resolution - SKU-1003',
+            'Apple iPhone 15 Pro Max Natural Titanium 256GB Storage Edition - SKU-1004'
+        ],
+        'product_status': [1, 2, 1, 1],
+        'barcode_value': ['880123456789', '880123456789', '880987654321', '880555444333'],
+        'ship_charge_AED': [10, 15, 10, 10],
+        'product_long_description': ['Detailed description here', '', 'Smart TV description', 'iPhone description'],
+        'product_highlight_1': [
+            'Feature one with proper length; invalid semicolon inside sentence description text length check here to reach minimum characters',
+            'Feature two ending with full stop.',
+            'Feature three with good characters count and no invalid punctuation or full stop at the end of the text line here now',
+            'Feature four text line with proper length and format for testing sample validation rules successfully without issues'
+        ],
+        'product_attribute_1': ['Color:Black', 'Warranty: 2 Years', 'Screen:65 Inch', 'Storage:256GB'],
