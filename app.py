@@ -1,6 +1,5 @@
 import io
 import re
-import base64
 import pandas as pd
 import streamlit as st
 
@@ -12,25 +11,32 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- Base64 Embedded Logo (Our Shopee Logo) ---
-LOGO_BASE64 = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBxMSEhUTExMVFhUXGR4aGBgYGR0dIBodHR0fHx0dHR0dHSggHxlolx0dITEiJSkrLi4uHR8zODMtNygtLisBCgoKDg0OGxAQGy0lICYtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLf/AABEIAOEA4QMBEQACEQEDEQH/xAAbAAACAwEBAQAAAAAAAAAAAAADBAECBQAGB//EAEQQAAECBAQDBQUGBQIFAwUAAAECEQADEiExQVFhBHFgA4GRsRMiA6HB0fAUMlKS4fFCYnKCsiNT0sKiM3OTFRY0Y2TD/8QAGQEAAwEBAQAAAAAAAAAAAAAAAAIDAQQF/8QAJhEAAgICAgICAwEBAQEAAAAAAAECEQMhEjEiQVFxBBNSYZFyI//aAAw50005/2Q=="
+# --- Base64 SVG Logo (Our Shopee Blue Cart Logo) ---
+LOGO_SVG = """
+<svg width="80" height="80" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect width="100" height="100" rx="20" fill="#5C32CA"/>
+    <path d="M22 28H32L38 60H72L80 38H36" stroke="white" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="42" cy="72" r="5" fill="white"/>
+    <circle cx="68" cy="72" r="5" fill="white"/>
+</svg>
+"""
 
-# --- Comprehensive Apple Light/Dark Universal Theme Styling ---
+# --- Comprehensive Styling (Fixes Dark Mode + Light Theme Layout) ---
 st.markdown("""
 <style>
-    /* Force Light background canvas & readable high-contrast typography across light/dark modes */
+    /* Force canvas to soft gray/white */
     .stApp, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
         background-color: #F5F5F7 !important;
         color: #1D1D1F !important;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
     }
 
-    /* Force all prose text, labels, and spans to dark gray/black */
+    /* Keep all labels and generic text legible */
     p, span, label, h1, h2, h3, h4, h5, h6, div {
         color: #1D1D1F;
     }
 
-    /* Header Container Card */
+    /* Frosted Header Container */
     .header-card {
         background: #FFFFFF !important;
         border: 1px solid #E5E5EA !important;
@@ -60,28 +66,19 @@ st.markdown("""
         margin: 0 !important;
     }
 
-    .logo-img {
-        width: 72px !important;
-        height: 72px !important;
-        border-radius: 16px !important;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.12) !important;
-        object-fit: cover !important;
-        background-color: #5C32CA !important;
-    }
-
     /* Uploader Visibility in Dark Mode */
     div[data-testid="stFileUploader"] {
         background-color: #FFFFFF !important;
         border: 2px dashed #0A2540 !important;
         border-radius: 16px !important;
-        padding: 24px !important;
+        padding: 20px !important;
         box-shadow: 0 2px 10px rgba(0,0,0,0.03) !important;
     }
     div[data-testid="stFileUploader"] * {
         color: #1D1D1F !important;
     }
 
-    /* Universal Button Fixes */
+    /* Buttons */
     .stButton>button, .stDownloadButton>button {
         background-color: #0A2540 !important;
         color: #FFFFFF !important;
@@ -309,7 +306,7 @@ class DataValidator:
                 self.log_error(idx, sku, c_col, 'Pricing', "Non-numeric values in pricing columns.")
 
 
-# --- Helper Function to Create Sample Data ---
+# --- Helper Function for Clean Test Data ---
 def generate_sample_data():
     return pd.DataFrame({
         'product_model_no': ['SKU-1001', 'SKU-1002', 'SKU-1003', 'SKU-1004'],
@@ -326,9 +323,134 @@ def generate_sample_data():
         'ship_charge_AED': [10, 15, 10, 10],
         'product_long_description': ['Detailed description here', '', 'Smart TV description', 'iPhone description'],
         'product_highlight_1': [
-            'Feature one with proper length; invalid semicolon inside sentence description text length check here to reach minimum characters',
+            'Feature one with proper length valid description text length check here to reach minimum characters count without fullstop',
             'Feature two ending with full stop.',
             'Feature three with good characters count and no invalid punctuation or full stop at the end of the text line here now',
             'Feature four text line with proper length and format for testing sample validation rules successfully without issues'
         ],
         'product_attribute_1': ['Color:Black', 'Warranty: 2 Years', 'Screen:65 Inch', 'Storage:256GB'],
+        'cost_UAE': [100, 200, 300, 400],
+        'price_UAE': [150, 180, 400, 500],
+        'sp_price_UAE': [120, 190, 350, 450],
+        'seo_title_UAE': [
+            'Sony Headphones Online at Best Prices in UAE | Ourshopee',
+            'Invalid Title Suffix UAE',
+            'Samsung TV Online at Best Prices in UAE | Ourshopee',
+            'Apple iPhone Online at Best Prices in UAE | Ourshopee'
+        ],
+        'seo_description_UAE': [
+            'Buy Sony Headphones. Explore great deals at the best price. Get fast delivery across UAE | Ourshopee.',
+            'Wrong Start Description',
+            'Buy Samsung TV. Explore great deals at the best price. Get fast delivery across UAE | Ourshopee.',
+            'Buy Apple iPhone. Explore great deals at the best price. Get fast delivery across UAE | Ourshopee.'
+        ],
+        'seo_keywords_UAE': ['headphones,audio,sony', 'tv ,samsung', 'iphone,apple,mobile', 'tech,gadgets,uae']
+    })
+
+
+# --- Header Layout ---
+st.markdown(f"""
+<div class="header-card">
+    <div>
+        <h1 class="gradient-title">Our Shopee Basic Data Checks</h1>
+        <div class="header-sub">Validation suite for titles, SKUs, brand mappings, SEO rules, highlights, and pricing.</div>
+    </div>
+    <div>{LOGO_SVG}</div>
+</div>
+""", unsafe_allow_html=True)
+
+
+# --- Upload & Test Controls ---
+ctrl_col1, ctrl_col2 = st.columns([3, 1])
+
+with ctrl_col1:
+    uploaded_file = st.file_uploader("Upload Excel or CSV File", type=["csv", "xlsx", "xls"])
+
+with ctrl_col2:
+    st.markdown("<br>", unsafe_allow_html=True)
+    load_sample = st.button("🧪 Load Sample Test Data", use_container_width=True)
+
+
+# --- Process File Data ---
+df_to_process = None
+
+if load_sample:
+    df_to_process = generate_sample_data()
+    st.info("Loaded sample dataset with test validation cases.")
+elif uploaded_file is not None:
+    try:
+        df_to_process = pd.read_csv(uploaded_file) if uploaded_file.name.endswith('.csv') else pd.read_excel(uploaded_file)
+    except Exception as e:
+        st.error(f"Failed to read file: {str(e)}")
+
+# --- Display Results and Analytics Dashboard ---
+if df_to_process is not None:
+    validator = DataValidator(df_to_process)
+    error_df = validator.run_all_validations()
+
+    total_rows = len(df_to_process)
+    error_rows = error_df['Row'].nunique() if not error_df.empty else 0
+    total_errors = len(error_df)
+    clean_rows = total_rows - error_rows
+    compliance_rate = (clean_rows / total_rows * 100) if total_rows > 0 else 100
+
+    # Key Metrics Cards
+    m1, m2, m3, m4 = st.columns(4)
+    m1.metric("Total Rows Evaluated", f"{total_rows:,}")
+    m2.metric("Flagged Rows", f"{error_rows:,}")
+    m3.metric("Total Issues", f"{total_errors:,}")
+    m4.metric("Compliance Rate", f"{compliance_rate:.1f}%")
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    if not error_df.empty:
+        tab_logs, tab_dash = st.tabs(["📋 Detailed Issue Logs", "📊 SKU Issue Dashboard"])
+
+        with tab_logs:
+            st.subheader("Validation Issue Logs")
+
+            categories = ["All"] + list(error_df['Category'].unique())
+            selected_cat = st.selectbox("Filter issues by category:", categories)
+
+            filtered_df = error_df if selected_cat == "All" else error_df[error_df['Category'] == selected_cat]
+            st.dataframe(filtered_df, use_container_width=True, height=360)
+
+            # Export Excel Report
+            output = io.BytesIO()
+            with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                df_to_process.to_excel(writer, index=False, sheet_name='Original Data')
+                error_df.to_excel(writer, index=False, sheet_name='Validation Errors')
+
+            st.download_button(
+                label="📥 Download Excel Error Report (.xlsx)",
+                data=output.getvalue(),
+                file_name="ourshopee_validation_report.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
+
+        with tab_dash:
+            st.subheader("Analytics & SKU Issue Breakdown")
+
+            dash_col1, dash_col2 = st.columns(2)
+
+            with dash_col1:
+                st.markdown("**Issues by Category**")
+                cat_counts = error_df['Category'].value_counts().reset_index()
+                cat_counts.columns = ['Category', 'Error Count']
+                st.bar_chart(cat_counts.set_index('Category'))
+
+            with dash_col2:
+                st.markdown("**Top Flagged Columns**")
+                col_counts = error_df['Column'].value_counts().head(8).reset_index()
+                col_counts.columns = ['Column Name', 'Error Count']
+                st.bar_chart(col_counts.set_index('Column Name'))
+
+            st.markdown("---")
+            st.markdown("**SKUs with Highest Issue Count**")
+            sku_summary = error_df[error_df['SKU'] != 'N/A']['SKU'].value_counts().reset_index()
+            sku_summary.columns = ['SKU ID', 'Total Errors Found']
+            st.dataframe(sku_summary, use_container_width=True, height=220)
+
+    else:
+        st.balloons()
+        st.success("All validations passed! The dataset contains no errors.")
