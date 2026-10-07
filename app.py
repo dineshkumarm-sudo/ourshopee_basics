@@ -21,22 +21,22 @@ LOGO_SVG = """
 </svg>
 """
 
-# --- Comprehensive Styling (Fixes Dark Mode + Button Contrast) ---
+# --- Comprehensive Styling (Guarantees Light Theme + Button Visibility in Dark Mode) ---
 st.markdown("""
 <style>
-    /* Force canvas to soft gray/white */
+    /* Force App Canvas Background and Primary Text */
     .stApp, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
         background-color: #F5F5F7 !important;
         color: #1D1D1F !important;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
     }
 
-    /* Keep all labels and generic text legible */
+    /* Keep all default typography crisp and dark */
     p, span, label, h1, h2, h3, h4, h5, h6, div {
         color: #1D1D1F;
     }
 
-    /* Frosted Header Container */
+    /* Header Container Card */
     .header-card {
         background: #FFFFFF !important;
         border: 1px solid #E5E5EA !important;
@@ -66,19 +66,7 @@ st.markdown("""
         margin: 0 !important;
     }
 
-    /* Uploader Visibility in Dark Mode */
-    div[data-testid="stFileUploader"] {
-        background-color: #FFFFFF !important;
-        border: 2px dashed #0A2540 !important;
-        border-radius: 16px !important;
-        padding: 20px !important;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.03) !important;
-    }
-    div[data-testid="stFileUploader"] * {
-        color: #1D1D1F !important;
-    }
-
-    /* Universal Button Contrast Overrides */
+    /* Universal Action Button Contrast Fix (Sample Data & Export Buttons) */
     .stButton>button, 
     .stDownloadButton>button,
     button[kind="secondary"],
@@ -104,6 +92,47 @@ st.markdown("""
         border-color: #FF6B00 !important;
         color: #FFFFFF !important;
         box-shadow: 0 6px 16px rgba(255, 107, 0, 0.3) !important;
+    }
+
+    /* File Uploader Container & Dropzone Styling Fix */
+    div[data-testid="stFileUploader"] {
+        background-color: #FFFFFF !important;
+        border-radius: 16px !important;
+        padding: 8px !important;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.03) !important;
+    }
+
+    div[data-testid="stFileUploader"] [data-testid="stFileUploaderDropzone"] {
+        background-color: #FFFFFF !important;
+        border: 2px dashed #0A2540 !important;
+        border-radius: 12px !important;
+    }
+
+    /* Force text and instructions in File Uploader to dark navy/charcoal */
+    div[data-testid="stFileUploader"] * {
+        color: #1D1D1F !important;
+    }
+
+    /* Target embedded 'Browse files' button inside Uploader */
+    div[data-testid="stFileUploader"] button {
+        background-color: #F0F2F6 !important;
+        border: 1px solid #0A2540 !important;
+        color: #0A2540 !important;
+        font-weight: 600 !important;
+        border-radius: 8px !important;
+    }
+
+    div[data-testid="stFileUploader"] button * {
+        color: #0A2540 !important;
+    }
+
+    div[data-testid="stFileUploader"] button:hover {
+        background-color: #0A2540 !important;
+        color: #FFFFFF !important;
+    }
+
+    div[data-testid="stFileUploader"] button:hover * {
+        color: #FFFFFF !important;
     }
 
     /* Metrics Styling */
